@@ -767,9 +767,13 @@ func (b *builtinSetStringVarSig) evalString(row chunk.Row) (res string, isNull b
 		return "", isNull, err
 	}
 	datum, err := b.args[1].Eval(row)
-	isNull = datum.IsNull()
-	if isNull || err != nil {
+	if err != nil {
 		return "", isNull, err
+	}
+	isNull = datum.IsNull()
+	if isNull {
+		sessionVars.UnsetUserVar(varName)
+		return "", true, nil
 	}
 	res, err = datum.ToString()
 	if err != nil {
@@ -797,9 +801,13 @@ func (b *builtinSetRealVarSig) evalReal(row chunk.Row) (res float64, isNull bool
 		return 0, isNull, err
 	}
 	datum, err := b.args[1].Eval(row)
-	isNull = datum.IsNull()
-	if isNull || err != nil {
+	if err != nil {
 		return 0, isNull, err
+	}
+	isNull = datum.IsNull()
+	if isNull {
+		sessionVars.UnsetUserVar(varName)
+		return 0, true, nil
 	}
 	res = datum.GetFloat64()
 	varName = strings.ToLower(varName)
@@ -824,9 +832,13 @@ func (b *builtinSetDecimalVarSig) evalDecimal(row chunk.Row) (*types.MyDecimal, 
 		return nil, isNull, err
 	}
 	datum, err := b.args[1].Eval(row)
-	isNull = datum.IsNull()
-	if isNull || err != nil {
+	if err != nil {
 		return nil, isNull, err
+	}
+	isNull = datum.IsNull()
+	if isNull {
+		sessionVars.UnsetUserVar(varName)
+		return nil, true, nil
 	}
 	res := datum.GetMysqlDecimal()
 	varName = strings.ToLower(varName)
@@ -851,9 +863,13 @@ func (b *builtinSetIntVarSig) evalInt(row chunk.Row) (int64, bool, error) {
 		return 0, isNull, err
 	}
 	datum, err := b.args[1].Eval(row)
-	isNull = datum.IsNull()
-	if isNull || err != nil {
+	if err != nil {
 		return 0, isNull, err
+	}
+	isNull = datum.IsNull()
+	if isNull {
+		sessionVars.UnsetUserVar(varName)
+		return 0, true, nil
 	}
 	res := datum.GetInt64()
 	varName = strings.ToLower(varName)
@@ -878,8 +894,12 @@ func (b *builtinSetTimeVarSig) evalTime(row chunk.Row) (types.Time, bool, error)
 		return types.ZeroTime, isNull, err
 	}
 	datum, err := b.args[1].Eval(row)
-	if err != nil || datum.IsNull() {
+	if err != nil {
 		return types.ZeroTime, datum.IsNull(), handleInvalidTimeError(b.ctx, err)
+	}
+	if datum.IsNull() {
+		sessionVars.UnsetUserVar(varName)
+		return types.ZeroTime, true, nil
 	}
 	res := datum.GetMysqlTime()
 	varName = strings.ToLower(varName)
