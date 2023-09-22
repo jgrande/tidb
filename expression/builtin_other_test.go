@@ -96,6 +96,7 @@ func TestSetVar(t *testing.T) {
 		{[]interface{}{"c", nil}, nil},
 		{[]interface{}{"c", "ABC"}, "ABC"},
 		{[]interface{}{"c", "dEf"}, "dEf"},
+		{[]interface{}{"c", nil}, nil},
 		{[]interface{}{"d", int64(3)}, int64(3)},
 		{[]interface{}{"e", float64(2.5)}, float64(2.5)},
 		{[]interface{}{"f", dec}, dec},
@@ -107,12 +108,15 @@ func TestSetVar(t *testing.T) {
 		d, err := evalBuiltinFunc(fn, chunk.MutRowFromDatums(types.MakeDatums(tc.args...)).ToRow())
 		require.NoError(t, err)
 		require.Equal(t, tc.res, d.GetValue())
+		key, ok := tc.args[0].(string)
+		require.Equal(t, true, ok)
 		if tc.args[1] != nil {
-			key, ok := tc.args[0].(string)
-			require.Equal(t, true, ok)
 			sessionVar, ok := ctx.GetSessionVars().GetUserVarVal(key)
 			require.Equal(t, true, ok)
 			require.Equal(t, tc.res, sessionVar.GetValue())
+		} else {
+			_, ok := ctx.GetSessionVars().GetUserVarVal(key)
+			require.Equal(t, false, ok)
 		}
 	}
 }
